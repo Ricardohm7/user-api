@@ -1,0 +1,10 @@
+# Ignore artifacts:
+build
+coverage
+
+.prettierrc
+nodemon.json
+package.json
+package-lock.json
+tsconfig.json
+eslint.config.mjs
