@@ -26,17 +26,20 @@ describe('Authentication Controller (JSON:API Compliant)', () => {
 
   describe('register', () => {
     it('should register a new user successfully', async () => {
-      const userData = {
-        data: {
-          type: 'users',
-          attributes: {
-            username: 'testuser',
-            email: 'test@example.com',
-            password: 'Password123!',
+      mockRequest = {
+        ...mockRequest,
+        path: '/v1/register',
+        body: {
+          data: {
+            type: 'users',
+            attributes: {
+              username: 'testuser',
+              email: 'test@example.com',
+              password: 'Password123!',
+            },
           },
         },
       };
-      mockRequest.body = userData;
 
       const mockUser = {
         _id: 'mockedUserId',
@@ -64,18 +67,67 @@ describe('Authentication Controller (JSON:API Compliant)', () => {
       });
     });
 
-    it('should return 400 for invalid input', async () => {
-      const userData = {
-        data: {
-          type: 'users',
-          attributes: {
-            username: 'te', // Too short
-            email: 'invalidemail',
-            password: 'short', // Too short and missing number and special character
+    // Test for v2 registration endpoint
+    it('should register a new user successfully with birthCity for v2', async () => {
+      mockRequest = {
+        ...mockRequest,
+        path: '/v2/register',
+        body: {
+          data: {
+            type: 'users',
+            attributes: {
+              username: 'testuser',
+              email: 'test@example.com',
+              password: 'Password123!',
+              birthCity: 'New York',
+            },
           },
         },
       };
-      mockRequest.body = userData;
+
+      const mockUser = {
+        _id: 'mockedUserId',
+        username: 'testuser',
+        email: 'test@example.com',
+        birthCity: 'New York',
+        save: jest.fn().mockResolvedValue(true),
+      };
+
+      (User as jest.MockedClass<typeof User>).mockImplementation(
+        () => mockUser as any,
+      );
+
+      await register(mockRequest as Request, mockResponse as Response);
+
+      expect(responseObject.status).toHaveBeenCalledWith(201);
+      expect(responseObject.json).toHaveBeenCalledWith({
+        data: {
+          type: 'users',
+          id: 'mockedUserId',
+          attributes: {
+            username: 'testuser',
+            email: 'test@example.com',
+            birthCity: 'New York',
+          },
+        },
+      });
+    });
+
+    it('should return 400 for invalid input', async () => {
+      mockRequest = {
+        ...mockRequest,
+        path: '/v1/register',
+        body: {
+          data: {
+            type: 'users',
+            attributes: {
+              username: 'te', // Too short
+              email: 'invalidemail',
+              password: 'short', // Too short and missing number and special character
+            },
+          },
+        },
+      };
 
       await register(mockRequest as Request, mockResponse as Response);
 

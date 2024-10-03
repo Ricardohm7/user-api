@@ -4,6 +4,7 @@ dotenv.config();
 import {appConfig} from './config/app.config';
 import connectDB from './config/database';
 import v1AuthRoutes from './routes/v1/auth.routes';
+import v2AuthRoutes from './routes/v2/auth.routes';
 import cookieParser from 'cookie-parser';
 
 const app = express();
@@ -19,7 +20,7 @@ app.use(cookieParser());
     await connectDB();
 
     app.use('/api/v1/auth', v1AuthRoutes);
-    //app.use('/api/users', userRoutes);
+    app.use('/api/v2/auth', v2AuthRoutes);
 
     app.get('/', (req, res) => {
       res.send('User API API');

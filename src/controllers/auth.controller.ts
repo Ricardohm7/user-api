@@ -4,7 +4,7 @@ import {Request, Response} from 'express';
 import jwt from 'jsonwebtoken';
 import {appConfig} from '../config/app.config';
 
-const UserSchema = z.object({
+const UserSchemav1 = z.object({
   username: z.string().min(3, 'Username must be at least 3 characters'),
   email: z.string().email('Invalid email address'),
   password: z
@@ -16,8 +16,15 @@ const UserSchema = z.object({
     ),
 });
 
+const UserSchemaV2 = UserSchemav1.extend({
+  birthCity: z.string(),
+});
+
 export const register = async (req: Request, res: Response) => {
   try {
+    const version = req.path.split('/')[1]; // Assumes path is like '/v1/register' or '/v2/register'
+    const UserSchema = version === 'v2' ? UserSchemaV2 : UserSchemav1;
+
     const validatedData = UserSchema.parse(req.body.data.attributes);
 
     const user = new User(validatedData);
@@ -30,6 +37,7 @@ export const register = async (req: Request, res: Response) => {
         attributes: {
           username: user.username,
           email: user.email,
+          ...(version === 'v2' && {birthCity: user.birthCity}),
         },
       },
     });
