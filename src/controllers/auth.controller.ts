@@ -57,14 +57,18 @@ export const register = async (req: Request, res: Response) => {
 };
 
 const LoginSchema = z.object({
-  email: z.string().email('Invalid email address'),
-  password: z.string().min(1, 'Password is required'),
+  data: z.object({
+    attributes: z.object({
+      email: z.string().email('Invalid email address'),
+      password: z.string().min(1, 'Password is required'),
+    }),
+  }),
 });
 
 export const login = async (req: Request, res: Response) => {
   try {
     const validatedData = LoginSchema.parse(req.body);
-    const {email, password} = validatedData;
+    const {email, password} = validatedData.data.attributes;
     const user = await User.findOne({email});
     if (!user || !(await user.comparePassword(password))) {
       return res.status(400).json({
@@ -105,7 +109,12 @@ export const login = async (req: Request, res: Response) => {
           accessToken,
         },
         relationships: {
-          user: {type: 'users', id: user._id},
+          user: {
+            data: {
+              type: 'users',
+              id: user._id,
+            },
+          },
         },
       },
       included: [

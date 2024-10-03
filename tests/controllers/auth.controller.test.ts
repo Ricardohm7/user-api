@@ -1,6 +1,7 @@
 import {Request, Response} from 'express';
-import {register} from '../../src/controllers/auth.controller'; // Adjust the import path as needed
-import User from '../../src/models/user.model'; // Adjust the import path as needed
+import {register, login} from '../../src/controllers/auth.controller';
+import User from '../../src/models/user.model';
+import jwt from 'jsonwebtoken';
 
 // Mock the User model
 jest.mock('../../src/models/user.model');
@@ -61,6 +62,91 @@ describe('Authentication Controller (JSON:API Compliant)', () => {
           },
         },
       });
+    });
+
+    it('should return 400 for invalid input', async () => {
+      const userData = {
+        data: {
+          type: 'users',
+          attributes: {
+            username: 'te', // Too short
+            email: 'invalidemail',
+            password: 'short', // Too short and missing number and special character
+          },
+        },
+      };
+      mockRequest.body = userData;
+
+      await register(mockRequest as Request, mockResponse as Response);
+
+      expect(responseObject.status).toHaveBeenCalledWith(400);
+      expect(responseObject.json).toHaveBeenCalledWith({
+        errors: expect.arrayContaining([
+          expect.objectContaining({
+            status: '400',
+            title: 'Validation Error',
+            detail: expect.any(String),
+            source: expect.objectContaining({
+              pointer: expect.stringMatching(/^\/data\/attributes\//),
+            }),
+          }),
+        ]),
+      });
+    });
+  });
+
+  describe('login', () => {
+    it('should login a user successfully', async () => {
+      const loginData = {
+        data: {
+          type: 'tokens',
+          attributes: {
+            email: 'test@example.com',
+            password: 'Password123!',
+          },
+        },
+      };
+      mockRequest.body = loginData;
+
+      const mockUser = {
+        _id: 'mockedUserId',
+        username: 'testuser',
+        comparePassword: jest.fn().mockResolvedValue(true),
+      };
+
+      (User.findOne as jest.Mock).mockResolvedValue(mockUser);
+      (jwt.sign as jest.Mock).mockReturnValue('mockedToken');
+
+      await login(mockRequest as Request, mockResponse as Response);
+
+      expect(responseObject.json).toHaveBeenCalledWith({
+        data: {
+          type: 'tokens',
+          id: 'mockedUserId',
+          attributes: {
+            accessToken: 'mockedToken',
+          },
+          relationships: {
+            user: {
+              data: {type: 'users', id: 'mockedUserId'},
+            },
+          },
+        },
+        included: [
+          {
+            type: 'users',
+            id: 'mockedUserId',
+            attributes: {
+              username: 'testuser',
+            },
+          },
+        ],
+      });
+      expect(responseObject.cookie).toHaveBeenCalledWith(
+        'refreshToken',
+        'mockedToken',
+        expect.any(Object),
+      );
     });
   });
 });
