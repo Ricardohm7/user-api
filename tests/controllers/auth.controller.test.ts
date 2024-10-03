@@ -147,6 +147,40 @@ describe('Authentication Controller (JSON:API Compliant)', () => {
     });
   });
 
+  it('should fail registration for v2 without birthCity', async () => {
+    mockRequest = {
+      ...mockRequest,
+      path: '/v2/register',
+      body: {
+        data: {
+          type: 'users',
+          attributes: {
+            username: 'testuser',
+            email: 'test@example.com',
+            password: 'Password123!',
+            // birthCity is missing
+          },
+        },
+      },
+    };
+
+    await register(mockRequest as Request, mockResponse as Response);
+
+    expect(responseObject.status).toHaveBeenCalledWith(400);
+    expect(responseObject.json).toHaveBeenCalledWith({
+      errors: [
+        {
+          status: '400',
+          title: 'Validation Error',
+          detail: 'Required',
+          source: {
+            pointer: '/data/attributes/birthCity',
+          },
+        },
+      ],
+    });
+  });
+
   describe('login', () => {
     it('should login a user successfully', async () => {
       const loginData = {
