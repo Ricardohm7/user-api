@@ -3,21 +3,26 @@ import dotenv from 'dotenv';
 dotenv.config();
 import {appConfig} from './config/app.config';
 import connectDB from './config/database';
+import v1AuthRoutes from './routes/v1/auth.routes';
+import cookieParser from 'cookie-parser';
 
 const app = express();
 
 // built-in middleware for json
 app.use(express.json());
 
+//middleware for cookies
+app.use(cookieParser());
+
 (async () => {
   try {
     await connectDB();
 
-    //app.use('/api/auth', authRoutes);
+    app.use('/api/v1/auth', v1AuthRoutes);
     //app.use('/api/users', userRoutes);
 
     app.get('/', (req, res) => {
-      res.send('Todo List API');
+      res.send('User API API');
     });
 
     app.listen(appConfig.serverPort, () => {
