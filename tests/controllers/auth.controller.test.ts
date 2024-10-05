@@ -306,5 +306,27 @@ describe('Authentication Controller (JSON:API Compliant)', () => {
       });
       expect(mockNext).not.toHaveBeenCalled();
     });
+
+    it('should return 403 if token is expired', () => {
+      const req = mockRequest();
+      const expiredToken = jwt.sign({id: '123'}, appConfig.jwtSecret, {
+        expiresIn: '0s',
+      });
+      req.headers['authorization'] = `Bearer ${expiredToken}`;
+      const res = mockResponse();
+
+      authMiddleware(req, res, mockNext);
+
+      expect(res.status).toHaveBeenCalledWith(403);
+      expect(res.json).toHaveBeenCalledWith({
+        errors: [
+          {
+            status: '403',
+            title: 'Authorization Error',
+            detail: 'Invalid token',
+          },
+        ],
+      });
+    });
   });
 });
