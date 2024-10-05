@@ -328,5 +328,22 @@ describe('Authentication Controller (JSON:API Compliant)', () => {
         ],
       });
     });
+
+    it('should call next() if a valid token is provided', () => {
+      const req = mockRequest();
+      const validToken = jwt.sign({id: '123'}, appConfig.jwtSecret);
+      req.headers['authorization'] = `Bearer ${validToken}`;
+      const res = mockResponse();
+
+      //Mock jwt.verify to return a valid payload
+      (jwt.verify as jest.Mock).mockReturnValue({id: '123'});
+
+      authMiddleware(req, res, mockNext);
+
+      expect(req.user).toEqual({id: '123'});
+      expect(mockNext).toHaveBeenCalled();
+      expect(res.status).not.toHaveBeenCalled();
+      expect(res.json).not.toHaveBeenCalled();
+    });
   });
 });
