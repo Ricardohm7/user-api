@@ -3,6 +3,7 @@ import {register, login} from '../../src/controllers/auth.controller';
 import User from '../../src/models/user.model';
 import jwt from 'jsonwebtoken';
 import {authMiddleware} from '../../src/middlewares/auth.middleware';
+import {appConfig} from '../../src/config/app.config';
 
 // Mock the User model
 jest.mock('../../src/models/user.model');
@@ -271,6 +272,35 @@ describe('Authentication Controller (JSON:API Compliant)', () => {
             status: '401',
             title: 'Authentication Error',
             detail: 'No token provided',
+          },
+        ],
+      });
+      expect(mockNext).not.toHaveBeenCalled();
+    });
+
+    it('should return 403 if an invalid token is provided', () => {
+      //validate this test
+      const req = mockRequest();
+      req.headers['authorization'] = 'Bearer invalidtoken';
+      const res = mockResponse();
+
+      (jwt.verify as jest.Mock).mockImplementation(() => {
+        throw new Error('Invalid token');
+      });
+
+      authMiddleware(req, res, mockNext);
+
+      expect(jwt.verify).toHaveBeenCalledWith(
+        'invalidtoken',
+        appConfig.jwtSecret,
+      );
+      expect(res.status).toHaveBeenCalledWith(403);
+      expect(res.json).toHaveBeenCalledWith({
+        errors: [
+          {
+            status: '403',
+            title: 'Authorization Error',
+            detail: 'Invalid token',
           },
         ],
       });
